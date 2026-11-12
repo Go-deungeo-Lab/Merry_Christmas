@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { MAT_LIGHT, SHADE, STRIDE, TILT, buildScene, shadePoint, type Scene, type TreeItem } from "@/lib/ascii-scene";
 import { STAR_Y } from "@/lib/tree-geometry";
+import styles from "./AsciiTree.module.css";
 
 export type { TreeItem };
 
@@ -23,6 +24,10 @@ const INITIAL_ROTATION = 0.5;
 const DRAG_SPEED = 0.01; // rad/px
 const DRAG_THRESHOLD = 5; // 이보다 적게 움직이면 클릭
 const HIT_RADIUS = 22; // 클릭 영역 반지름 (지름 44px)
+const MIN_ZOOM = 0.6;
+const MAX_ZOOM = 3;
+const MIN_ZOOM_FONT = 3; // 축소했을 때 글자 크기 하한
+const BUTTON_ZOOM_STEP = 1.4;
 const FRAME_INTERVAL = 1000 / 30;
 const TODAY_LIGHT_Y = 1.0; // 별 바로 아래, 회전축 위라 항상 같은 자리
 const BG_STAR_COUNT = 220;
@@ -51,6 +56,8 @@ type Props = {
 type Renderer = {
   setItems: (items: TreeItem[]) => void;
   setShowTodayLight: (show: boolean) => void;
+  zoomBy?: (factor: number) => void;
+  resetZoom?: () => void;
 };
 
 export default function AsciiTree({ items, showTodayLight = false, onTodayLightClick, onItemClick, className }: Props) {
@@ -116,6 +123,13 @@ export default function AsciiTree({ items, showTodayLight = false, onTodayLightC
 
     let width = 0;
     let height = 0;
+    let baseUnit = 0; // 확대 전 트리 1단위의 화면 px
+    let baseFont = 0;
+    let zoom = 1;
+    let panX = 0; // 확대한 상태에서 끌어서 옮긴 거리 (px)
+    let panY = 0;
+    let anchorX = 0; // 바닥 중심(원점)의 화면 위치
+    let anchorY = 0;
     let unit = 0;
     let fontSize = 0;
     let font = "";
@@ -146,27 +160,58 @@ export default function AsciiTree({ items, showTodayLight = false, onTodayLightC
       sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // 별~바닥 앞쪽까지 약 1.55 단위, 선물까지 가로 약 1.3 단위가 들어오도록
-      unit = Math.min((height * 0.84) / 1.55, (width * 0.94) / 1.3);
-      fontSize = Math.max(MIN_FONT, unit / BASE_ROWS_PER_UNIT);
-      font = `${fontSize}px ${fontFamily}`;
-      cellH = fontSize;
-      rows = Math.ceil(height / cellH);
-      // 칸이 줄어든 만큼 점도 줄인다 (0.1 단위로 끊어서 크기를 조금 바꿀 때마다 다시 만들지 않게)
-      const ratio = unit / fontSize / BASE_ROWS_PER_UNIT;
+      baseUnit = Math.min((height * 0.84) / 1.55, (width * 0.94) / 1.3);
+      baseFont = Math.max(MIN_FONT, baseUnit / BASE_ROWS_PER_UNIT);
+      // 칸이 줄어든 만큼 점도 줄인다 (0.1 단위로 끊어서 크기를 조금 바꿀 때마다 다시 만들지 않게).
+      // 확대·축소는 글자와 트리를 같은 비율로 키우므로 점 밀도와는 상관없다.
+      const ratio = baseUnit / baseFont / BASE_ROWS_PER_UNIT;
       const nextDensity = Math.max(0.1, Math.min(1, Math.round(ratio * ratio * 10) / 10));
       if (nextDensity !== density) {
         density = nextDensity;
         needsBuild = true;
       }
-      // 글꼴이 늦게 로드돼 글자 폭이 바뀌어도 넘치지 않게 넉넉히
-      capacity = Math.ceil(width / (fontSize * 0.5)) * rows;
-      depth = new Float32Array(capacity);
-      cellChar = new Uint8Array(capacity);
-      cellKey = new Uint16Array(capacity);
-      cellPoint = new Int32Array(capacity);
-      cellItem = new Int16Array(capacity);
-      next = new Int32Array(capacity);
+      applyZoom(true);
+    };
+
+    // 지도처럼 확대·축소한다: 화면 가운데를 기준으로 zoom배 키운 뒤 pan만큼 옮긴다.
+    // 화면 위치 = 가운데 + zoom × (확대 전 위치 − 가운데) + pan
+    const applyZoom = (reallocate = false) => {
+      unit = baseUnit * zoom;
+      fontSize = Math.max(MIN_ZOOM_FONT, baseFont * zoom);
+      font = `${fontSize}px ${fontFamily}`;
+      cellH = fontSize;
+      rows = Math.ceil(height / cellH);
+      // 확대했을 때만 옮길 수 있고, 트리가 화면 밖으로 사라지지 않을 만큼만
+      const maxPanX = (width * Math.max(0, zoom - 1)) / 2;
+      const maxPanY = (height * Math.max(0, zoom - 1)) / 2;
+      panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+      panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+      const baseAnchorY = (height * 0.86 - 1.55 * baseUnit) / 2 + 1.3 * baseUnit;
+      anchorX = width / 2 + panX;
+      anchorY = height / 2 + (baseAnchorY - height / 2) * zoom + panY;
+      // 글꼴이 늦게 로드돼 글자 폭이 바뀌어도 넘치지 않게 넉넉히. 확대·축소 중에는 커질 때만 새로 잡는다
+      const needed = Math.ceil(width / (fontSize * 0.5)) * rows;
+      if (reallocate || needed > capacity) {
+        capacity = needed;
+        depth = new Float32Array(capacity);
+        cellChar = new Uint8Array(capacity);
+        cellKey = new Uint16Array(capacity);
+        cellPoint = new Int32Array(capacity);
+        cellItem = new Int16Array(capacity);
+        next = new Int32Array(capacity);
+      }
       needsProject = true;
+    };
+
+    // (mx, my) 지점이 손가락·커서 아래에 그대로 남도록 확대·축소한다
+    const zoomAt = (mx: number, my: number, nextZoom: number) => {
+      const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom));
+      const qx = (mx - width / 2 - panX) / zoom;
+      const qy = (my - height / 2 - panY) / zoom;
+      zoom = clamped;
+      panX = mx - width / 2 - zoom * qx;
+      panY = my - height / 2 - zoom * qy;
+      applyZoom();
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -185,8 +230,8 @@ export default function AsciiTree({ items, showTodayLight = false, onTodayLightC
       cellW = ctx.measureText("M").width;
       cols = Math.min(Math.ceil(width / cellW), Math.floor(capacity / rows));
       const cellCount = cols * rows;
-      const cx = width / 2;
-      const baseY = (height * 0.86 - 1.55 * unit) / 2 + 1.3 * unit; // 바닥 중심의 화면 y
+      const cx = anchorX;
+      const baseY = anchorY; // 바닥 중심의 화면 y
       depth.fill(-Infinity, 0, cellCount);
       cellPoint.fill(-1, 0, cellCount);
       cellItem.fill(-1, 0, cellCount);
@@ -305,45 +350,113 @@ export default function AsciiTree({ items, showTodayLight = false, onTodayLightC
       return best >= 0 ? { type: "item", index: best } : null;
     };
 
-    let pointer: { id: number; startX: number; startY: number; lastX: number; dragging: boolean } | null = null;
+    // 한 손가락: 가로로 끌면 회전, 세로로 끌면 위아래 이동(확대했을 때). 짧게 누르면 클릭.
+    // 두 손가락: 핀치로 확대·축소, 함께 움직이면 이동.
+    const pointers = new Map<number, { x: number; y: number }>();
+    let single: { id: number; startX: number; startY: number; lastX: number; lastY: number; dragging: boolean } | null = null;
+    let pinch: { startDist: number; startZoom: number; midX: number; midY: number } | null = null;
     const localPoint = (e: PointerEvent): [number, number] => {
       const rect = canvas.getBoundingClientRect();
       return [e.clientX - rect.left, e.clientY - rect.top];
     };
+    const pinchState = () => {
+      const [a, b] = [...pointers.values()];
+      return { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2 };
+    };
+    // 포인터가 이미 떨어졌으면 예외가 나므로 무시한다
+    const capture = (id: number) => {
+      try {
+        canvas.setPointerCapture(id);
+      } catch {}
+    };
     const onPointerDown = (e: PointerEvent) => {
-      pointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, lastX: e.clientX, dragging: false };
+      const [x, y] = localPoint(e);
+      pointers.set(e.pointerId, { x, y });
+      if (pointers.size === 1) {
+        single = { id: e.pointerId, startX: x, startY: y, lastX: x, lastY: y, dragging: false };
+      } else if (pointers.size === 2) {
+        // 두 번째 손가락이 닿으면 핀치로 바뀌고, 이번 터치는 클릭으로 치지 않는다
+        single = null;
+        const { dist, midX, midY } = pinchState();
+        pinch = { startDist: dist, startZoom: zoom, midX, midY };
+        for (const id of pointers.keys()) capture(id);
+      }
     };
     const onPointerMove = (e: PointerEvent) => {
-      if (pointer && e.pointerId === pointer.id) {
-        if (!pointer.dragging && Math.hypot(e.clientX - pointer.startX, e.clientY - pointer.startY) >= DRAG_THRESHOLD) {
-          pointer.dragging = true;
-          canvas.setPointerCapture(e.pointerId);
-        }
-        if (pointer.dragging) {
-          rotation += (e.clientX - pointer.lastX) * DRAG_SPEED;
-          pointer.lastX = e.clientX;
-          needsProject = true;
-        }
+      const [x, y] = localPoint(e);
+      if (!pointers.has(e.pointerId)) {
+        if (e.pointerType === "mouse") canvas.style.cursor = hitTest(x, y) ? "pointer" : "";
         return;
       }
-      if (e.pointerType === "mouse") {
-        const [px, py] = localPoint(e);
-        canvas.style.cursor = hitTest(px, py) ? "pointer" : "";
+      pointers.set(e.pointerId, { x, y });
+
+      if (pinch && pointers.size >= 2) {
+        const { dist, midX, midY } = pinchState();
+        panX += midX - pinch.midX;
+        panY += midY - pinch.midY;
+        pinch.midX = midX;
+        pinch.midY = midY;
+        zoomAt(midX, midY, pinch.startZoom * (dist / pinch.startDist));
+        return;
+      }
+
+      if (single && e.pointerId === single.id) {
+        if (!single.dragging && Math.hypot(x - single.startX, y - single.startY) >= DRAG_THRESHOLD) {
+          single.dragging = true;
+          capture(e.pointerId);
+        }
+        if (single.dragging) {
+          rotation += (x - single.lastX) * DRAG_SPEED;
+          if (zoom > 1) {
+            panY += y - single.lastY;
+            applyZoom();
+          }
+          single.lastX = x;
+          single.lastY = y;
+          needsProject = true;
+        }
       }
     };
     const onPointerUp = (e: PointerEvent) => {
-      if (!pointer || e.pointerId !== pointer.id) return;
-      const wasDrag = pointer.dragging;
-      pointer = null;
+      pointers.delete(e.pointerId);
+      if (pinch) {
+        if (pointers.size === 0) pinch = null;
+        return;
+      }
+      if (!single || e.pointerId !== single.id) return;
+      const wasDrag = single.dragging;
+      single = null;
       if (wasDrag) return;
       const [px, py] = localPoint(e);
       const hit = hitTest(px, py);
       if (hit?.type === "light") propsRef.current.onTodayLightClick?.();
       else if (hit?.type === "item") propsRef.current.onItemClick?.(hit.index);
     };
-    const onPointerCancel = () => {
-      pointer = null;
+    const onPointerCancel = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      single = null;
+      if (pointers.size === 0) pinch = null;
     };
+    // 마우스 휠·트랙패드 핀치(ctrl+휠)로 커서 위치를 기준으로 확대·축소
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const speed = e.ctrlKey ? 0.01 : 0.0015;
+      zoomAt(e.clientX - rect.left, e.clientY - rect.top, zoom * Math.exp(-e.deltaY * speed));
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+
+    rendererRef.current = {
+      ...rendererRef.current!,
+      zoomBy: (factor) => zoomAt(width / 2, height / 2, zoom * factor),
+      resetZoom: () => {
+        zoom = 1;
+        panX = 0;
+        panY = 0;
+        applyZoom();
+      },
+    };
+
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
@@ -446,6 +559,7 @@ export default function AsciiTree({ items, showTodayLight = false, onTodayLightC
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerCancel);
+      canvas.removeEventListener("wheel", onWheel);
     };
   }, []);
 
@@ -457,5 +571,20 @@ export default function AsciiTree({ items, showTodayLight = false, onTodayLightC
     rendererRef.current?.setShowTodayLight(showTodayLight);
   }, [showTodayLight]);
 
-  return <canvas ref={canvasRef} className={className} aria-label="ASCII 크리스마스 트리" />;
+  return (
+    <>
+      <canvas ref={canvasRef} className={className} aria-label="ASCII 크리스마스 트리" />
+      <div className={styles.zoom} role="group" aria-label="트리 확대·축소">
+        <button type="button" aria-label="확대" onClick={() => rendererRef.current?.zoomBy?.(BUTTON_ZOOM_STEP)}>
+          +
+        </button>
+        <button type="button" aria-label="축소" onClick={() => rendererRef.current?.zoomBy?.(1 / BUTTON_ZOOM_STEP)}>
+          −
+        </button>
+        <button type="button" aria-label="원래 크기로" onClick={() => rendererRef.current?.resetZoom?.()}>
+          ↺
+        </button>
+      </div>
+    </>
+  );
 }

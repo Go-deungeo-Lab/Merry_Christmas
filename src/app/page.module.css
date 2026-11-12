@@ -41,3 +41,29 @@
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
 }
+
+.auth {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.85rem;
+  color: #f3e7c4;
+}
+
+.auth button {
+  padding: 8px 14px;
+  border: 1px solid rgba(243, 231, 196, 0.4);
+  border-radius: 999px;
+  background: rgba(10, 14, 28, 0.6);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth button:hover {
+  border-color: #f3e7c4;
+}

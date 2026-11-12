@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import AsciiTree, { type TreeItem } from "@/components/AsciiTree";
 import Modal from "@/components/Modal";
 import { DEMO_ITEMS } from "@/lib/demo-items";
-import { COLOR_CSS, ITEM_GLYPH, ITEM_LABEL, describeItem, formatDate, itemDetail } from "@/lib/labels";
+import ItemPreview from "@/components/ItemPreview";
+import { ITEM_LABEL, describeItem, formatDate, itemDetail } from "@/lib/labels";
 import styles from "./TreeScene.module.css";
 
 type Fortune = {
@@ -151,9 +152,7 @@ export default function TreeScene({ loggedIn, className }: { loggedIn: boolean; 
                 aria-busy={view.picking === candidate.index}
                 onClick={() => choose(candidate.index)}
               >
-                <pre className={styles.glyph} style={{ color: COLOR_CSS[candidate.color] }} aria-hidden="true">
-                  {ITEM_GLYPH[candidate.itemType]}
-                </pre>
+                <ItemPreview item={candidate} className={styles.preview} />
                 <span className={styles.candidateName}>{ITEM_LABEL[candidate.itemType]}</span>
                 <span className={styles.candidateDetail}>
                   {itemDetail(candidate).join(" · ")}

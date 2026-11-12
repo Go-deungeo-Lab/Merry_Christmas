@@ -37,31 +37,6 @@ export const VARIANT_LABEL: Record<string, string> = {
   default: "",
 };
 
-// 후보 카드에 보여 줄 색 (CSS)
-export const COLOR_CSS: Record<string, string> = {
-  red: "#e0464a",
-  gold: "#f2b84b",
-  blue: "#5b7bea",
-  silver: "#d4d8e2",
-  green: "#3fae6a",
-  warm: "#ffd27a",
-  white: "#fff4dc",
-  multi: "#ff8a7a",
-  brown: "#b07a4a",
-  cream: "#efdcb8",
-};
-
-// 후보 카드의 작은 ASCII 그림
-export const ITEM_GLYPH: Record<ItemType, string> = {
-  ornament: "  _  \n ( ) \n(@@@)\n '-' ",
-  light: "    \n o~o~o \n ~o~o~ \n    ",
-  gift: " \\|/ \n+-#-+\n| # |\n+-#-+",
-  teddy: "() ()\n(o.o)\n(> <)\n (_) ",
-  carpet: "     \n.~~~.\n:###:\n'~~~'",
-  snow: "*  . \n . * \n*  . \n . * ",
-  star: " \\|/ \n--@--\n /|\\ \n     ",
-};
-
 // 색·모양 설명. 눈 내리기는 색이 하나뿐이라 붙이지 않는다
 export function itemDetail(item: { itemType: ItemType; color: string; variant: string }) {
   if (item.itemType === "snow") return [];

@@ -1,0 +1,69 @@
+.main {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 30%, #16203d 0%, var(--background) 70%);
+}
+
+.tree {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.tree:active {
+  cursor: grabbing;
+}
+
+.countdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5dvh;
+  text-align: center;
+  font-family: var(--font-geist-mono), monospace;
+  color: #f3e7c4;
+  pointer-events: none;
+}
+
+.countdown [data-role="label"] {
+  font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+  letter-spacing: 0.15em;
+  opacity: 0.65;
+  margin-bottom: 0.4em;
+}
+
+.countdown [data-role="time"] {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.85rem;
+  color: #f3e7c4;
+}
+
+.auth button {
+  padding: 8px 14px;
+  border: 1px solid rgba(243, 231, 196, 0.4);
+  border-radius: 999px;
+  background: rgba(10, 14, 28, 0.6);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth button:hover {
+  border-color: #f3e7c4;
+}

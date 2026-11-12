@@ -4,7 +4,8 @@ import { db } from "@/db";
 import { dailyOffers, dailyPicks, type Candidate } from "@/db/schema";
 import { apiError, currentUserId, unauthorized } from "@/lib/api";
 import { makeCandidates } from "@/lib/items";
-import { servicePeriod, todayKst } from "@/lib/kst";
+import { SERVICE_START, servicePeriod, todayKst } from "@/lib/kst";
+import { formatDate } from "@/lib/labels";
 import { findPick } from "@/lib/picks";
 
 const publicCandidates = (candidates: Candidate[]) =>
@@ -19,7 +20,7 @@ export async function GET() {
   const today = todayKst();
   const period = servicePeriod(today);
   if (period !== "open") {
-    return apiError(403, `period_${period}`, period === "before" ? "11월 20일에 시작해요." : "올해 운세는 끝났어요.");
+    return apiError(403, `period_${period}`, period === "before" ? `${formatDate(SERVICE_START)}에 시작해요.` : "올해 운세는 끝났어요.");
   }
 
   const pick = await findPick(userId, today);

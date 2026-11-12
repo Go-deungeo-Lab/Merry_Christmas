@@ -1,0 +1,25 @@
+.zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.zoom button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(243, 231, 196, 0.35);
+  border-radius: 12px;
+  background: rgba(10, 14, 28, 0.88); /* 확대한 트리가 뒤로 비쳐도 잘 보이게 */
+  color: #f3e7c4;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zoom button:hover {
+  border-color: #f3e7c4;
+}

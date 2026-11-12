@@ -4,7 +4,7 @@ import { CARPET_RADIUS, STAR_Y, foliageRadius, foliageY } from "./tree-geometry"
 type Vec3 = [number, number, number];
 
 type ItemRule = {
-  max: number; // 한 사람이 가질 수 있는 최대 개수 (합계 42 = 서비스 기간 42일)
+  max: number; // 한 사람이 가질 수 있는 최대 개수 (합계 = 서비스 기간 11/12~12/31, 50일)
   weight: number; // 후보로 뽑힐 상대 확률
   colors: string[];
   variants: string[];
@@ -16,7 +16,7 @@ const ORNAMENT_SIZE = 0.036;
 
 export const ITEM_RULES: Record<ItemType, ItemRule> = {
   ornament: {
-    max: 18,
+    max: 22,
     weight: 5,
     colors: ["red", "gold", "blue", "silver"],
     variants: ["plain", "stripe", "glitter"],
@@ -29,7 +29,7 @@ export const ITEM_RULES: Record<ItemType, ItemRule> = {
     },
   },
   light: {
-    max: 14,
+    max: 18,
     weight: 5,
     colors: ["warm", "white", "multi"],
     variants: ["steady", "twinkle"],
@@ -84,6 +84,9 @@ export const ITEM_RULES: Record<ItemType, ItemRule> = {
 };
 
 const ITEM_TYPES = Object.keys(ITEM_RULES) as ItemType[];
+
+// 매일 하나씩 골랐을 때 트리가 꽉 차는 날 수
+export const TOTAL_CAPACITY = ITEM_TYPES.reduce((sum, type) => sum + ITEM_RULES[type].max, 0);
 
 function floorPoint(rand: () => number): Vec3 {
   const r = 0.3 + rand() * (CARPET_RADIUS - 0.38);

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import AsciiTree, { type TreeItem } from "@/components/AsciiTree";
 import Modal from "@/components/Modal";
 import { DEMO_ITEMS } from "@/lib/demo-items";
+import { SERVICE_START } from "@/lib/kst";
 import ItemPreview from "@/components/ItemPreview";
 import { ITEM_LABEL, describeItem, formatDate, itemDetail } from "@/lib/labels";
 import styles from "./TreeScene.module.css";
@@ -230,7 +231,7 @@ function Hint({ loggedIn, tree, onOpenToday }: { loggedIn: boolean; tree: TreeRe
     return <p className={styles.hint}>매일 불빛을 눌러 아이템을 고르고, 오늘의 운세와 함께 나만의 트리를 꾸며 보세요</p>;
   }
   if (!tree) return null;
-  if (tree.period === "before") return <p className={styles.hint}>11월 20일부터 매일 새 불빛이 켜져요</p>;
+  if (tree.period === "before") return <p className={styles.hint}>{formatDate(SERVICE_START)}부터 매일 새 불빛이 켜져요</p>;
   if (tree.period === "after") return <p className={styles.hint}>올해의 트리가 완성됐어요. 아이템을 눌러 지난 운세를 다시 볼 수 있어요</p>;
   if (!tree.pickedToday) {
     return (

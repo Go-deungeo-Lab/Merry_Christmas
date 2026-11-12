@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { dailyOffers, dailyPicks } from "@/db/schema";
 import { apiError, currentUserId, unauthorized } from "@/lib/api";
-import { servicePeriod, todayKst } from "@/lib/kst";
+import { SERVICE_START, servicePeriod, todayKst } from "@/lib/kst";
+import { formatDate } from "@/lib/labels";
 import { drawFortuneId, findPick } from "@/lib/picks";
 
 // body { index: 0~2 }. 아이템 내용은 서버에 저장된 후보에서 꺼내고, 운세는 이때 정한다.
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   const today = todayKst();
   const period = servicePeriod(today);
   if (period !== "open") {
-    return apiError(403, `period_${period}`, period === "before" ? "11월 20일에 시작해요." : "올해 운세는 끝났어요.");
+    return apiError(403, `period_${period}`, period === "before" ? `${formatDate(SERVICE_START)}에 시작해요.` : "올해 운세는 끝났어요.");
   }
 
   // 이미 골랐다면 같은 결과를 돌려준다 (중복 요청, 새로고침)

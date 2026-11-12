@@ -1,6 +1,6 @@
 // 하루의 기준은 서버가 계산한 KST 날짜다. 클라이언트는 날짜를 보내지 않는다.
 
-export const SERVICE_START = "2026-11-20";
+export const SERVICE_START = "2026-11-12";
 export const SERVICE_END = "2026-12-31";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;

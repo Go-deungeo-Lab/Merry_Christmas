@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import {
+  CARPET_RADIUS,
+  FLOOR_RADIUS,
+  STAR_Y,
+  TRUNK_HEIGHT,
+  TRUNK_RADIUS,
+  foliageRadius,
+  foliageY,
+} from "@/lib/tree-geometry";
 
 // 화면을 문자 칸 격자로 나누고, 3D 점 구름을 투영해 칸마다 가장 앞에 있는 점의 밝기로 문자를 고른다.
 
@@ -36,20 +45,11 @@ const FRAME_INTERVAL = 1000 / 30;
 const AMBIENT = 0.38;
 const SURFACE_DENSITY = 27000; // 물체 표면 1단위 면적당 점 수
 
-const FOLIAGE_BOTTOM = 0.3;
-const FOLIAGE_TOP = 1.1;
-const TREE_RADIUS = 0.44;
-const TIERS = 7;
 const TREE_POINTS = 52000;
 const LIGHT_COUNT = 170;
 const ORNAMENT_COUNT = 16;
-const TRUNK_RADIUS = 0.065;
-const TRUNK_HEIGHT = 0.36;
-const CARPET_RADIUS = 0.62;
 const CARPET_POINTS = 13000;
-const FLOOR_RADIUS = 0.8;
 const FLOOR_POINTS = 6000;
-const STAR_Y = 1.16;
 const TODAY_LIGHT_Y = 1.0; // 오늘의 불빛 (별 바로 아래, 회전축 위라 항상 같은 자리)
 const BG_STAR_COUNT = 220;
 const SNOW_COUNT = 120;
@@ -199,17 +199,6 @@ function carpetColor(r: number, a: number): Vec3 | null {
   if (r > 0.43) return CARPET_CREAM;
   if (Math.abs(r - 0.3 - 0.025 * Math.sin(a * 10)) < 0.022) return CARPET_CREAM;
   return CARPET_RED;
-}
-
-// 층마다 아랫부분이 튀어나오는 실루엣. t: 0 밑단 → 1 꼭대기
-function foliageRadius(t: number) {
-  const fromTop = 1 - t;
-  return TREE_RADIUS * fromTop * (0.8 + 0.2 * ((fromTop * TIERS) % 1));
-}
-
-function foliageY(t: number, r: number) {
-  // 가지 끝은 살짝 처지게
-  return FOLIAGE_BOTTOM + t * (FOLIAGE_TOP - FOLIAGE_BOTTOM) - 0.04 * (r / TREE_RADIUS);
 }
 
 function buildScene() {

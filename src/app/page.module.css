@@ -16,3 +16,28 @@
 .tree:active {
   cursor: grabbing;
 }
+
+.countdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5dvh;
+  text-align: center;
+  font-family: var(--font-geist-mono), monospace;
+  color: #f3e7c4;
+  pointer-events: none;
+}
+
+.countdown [data-role="label"] {
+  font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+  letter-spacing: 0.15em;
+  opacity: 0.65;
+  margin-bottom: 0.4em;
+}
+
+.countdown [data-role="time"] {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}

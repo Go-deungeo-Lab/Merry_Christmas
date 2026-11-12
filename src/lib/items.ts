@@ -37,7 +37,7 @@ export const ITEM_RULES: Record<ItemType, ItemRule> = {
     place: (rand) => {
       const t = 0.04 + rand() * 0.84;
       const a = rand() * Math.PI * 2;
-      const r = foliageRadius(t) * 1.02;
+      const r = foliageRadius(t) * 1.1 + 0.01;
       return [Math.cos(a) * r, foliageY(t, r), Math.sin(a) * r];
     },
   },
